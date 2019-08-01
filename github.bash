@@ -5,7 +5,7 @@ github::latest_release() {
     local _repo=$1
     local -n output_version=$2
     local _url
-    _url=$(curl -w "%{url_effective}" -I -L -s -S "https://github.com/$_repo/releases/latest" -o /dev/null)
+    _url=$(curl -f -w "%{url_effective}" -I -L -s -S "https://github.com/$_repo/releases/latest" -o /dev/null)
     if [ "$_url" != "https://github.com/$_repo/releases" ];then
         # shellcheck disable=SC2034
         output_version=$(echo -n "$_url"| sed -e 's|.*/||')
@@ -33,7 +33,7 @@ github::latest_commit() {
     local -n output_sha=$3
     exec::assert_cmd jq
     local _json
-    _json=$(curl -s -L "https://api.github.com/repos/$_repo/commits/$_branch")
+    _json=$(curl -f -s -L "https://api.github.com/repos/$_repo/commits/$_branch")
     local _sha=""
     if _sha=$(echo -n "$_json" | jq '.sha' -re);then
         # shellcheck disable=SC2034

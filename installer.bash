@@ -85,7 +85,7 @@ installer::copy_file() {
     if [ -f "$dst" ];then
         local backup=""
         tmp::create_persistent_file backup "backup" "$installer__files_dir"
-        cp "$dst" "$backup"
+        cp -p "$dst" "$backup"
         local relative_backup="${backup##$installer__dir/}"
         installer::_add_sha_item "$installer__dir" "$relative_backup"
         installer::_write_line "log 'Restoring $dst'"

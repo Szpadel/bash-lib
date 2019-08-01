@@ -20,14 +20,42 @@ exec::silent() {
     fi
 }
 
+exec::retried_exec() {
+    local retries=$1
+    local sleep=$2
+    shift;shift
+    local try
+    local log
+    for ((try=0; try<retries; try++)) {
+        if log="$("$@" 2>&1)" &>/dev/null;then
+            return 0
+        fi
+        if [ "$DEBUG" = "1" ];then
+            echo "$log" >&2
+        fi
+        sleep "$sleep"
+    }
+    log::error "Command $* failed $retries times"
+    log::error "$log"
+    return 1
+}
+
 exec__sudo_keeping=0
 
 exec::sudo_keep_alive() {
+    exec::assert_cmd "sudo"
     if [ "$exec__sudo_keeping" != "1" ];then
         exec__sudo_keeping=1
-        sudo -v
+        if ! sudo -v;then
+            log::fatal "sudo authentication failed"
+        fi
         while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
     fi
+}
+
+exec::sudo() {
+    exec::sudo_keep_alive
+    sudo "$@"
 }
 
 exec::is_cmd_available() {
@@ -49,7 +77,7 @@ exec::is_fn() {
 exec::assert_cmd() {
     local cmd="$1"
     if ! exec::is_cmd_available "$cmd";then
-        log::panic "Command \`$cmd\` is not available, but is required by this application"
+        log::fatal "Command \`$cmd\` is not available, but is required by this application"
     fi
 }
 

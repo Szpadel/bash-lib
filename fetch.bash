@@ -23,6 +23,15 @@ fetch::download_stream() {
     curl -sfL "$url"
 }
 
+fetch::file_exists() {
+    local url=$1
+    if curl --output /dev/null --silent --head --fail -L "$url";then
+        return 0
+    else
+        return 1
+    fi
+}
+
 fetch::verify() {
     local sha=$1
     local file=$2

@@ -41,17 +41,18 @@ traps::_handle_int() {
 }
 
 traps::_handle_err() {
+    local err=$?
     log::debug "Handling ERR traps"
     if [ "$traps__err_ignore" = "1" ];then
         return 0
     fi
     for cb in "${traps__err_trap[@]}";do
-        $cb
+        $cb "$err"
     done
 }
 
 traps::_init() {
-    if [ "$traps__set_up" != "$BASHPID" ] && [ -z "$BASH_LIB_UNDER_TEST" ];then
+    if [ "$traps__set_up" = "0" ] && [ -z "$BASH_LIB_UNDER_TEST" ];then
         log::debug "Setting up traps for $BASHPID"
         traps__set_up=$BASHPID
         traps__exit_trap=()

@@ -27,9 +27,12 @@ xdg::_find_file_in_paths() {
     local filename="$1"
     local paths="$2"
     local directories=()
-    mapfile -d' ' directories <<< "$paths"
+    mapfile -d':' -t directories <<< "$paths"
     for dir in "${directories[@]}";do
-        if [ -d "$dir/$filename" ];then
+        dir=$(echo -n "$dir"|tr -d "\n")
+        log::debug "looking for $dir/$filename..."
+        if [ -e "$dir/$filename" ];then
+            log::debug "found $dir/$filename"
             echo -n "$dir/$filename"
             return
         fi
@@ -48,9 +51,5 @@ xdg::find_config_file() {
     local config_dirs
     config_dirs="$(xdg::config_file ""):${XDG_CONFIG_DIRS:-"/etc/xdg"}"
     xdg::_find_file_in_paths "$filename" "$config_dirs"
-}
-
-xdg_test::test_find_data_file() {
-    XDG_DATA_DIRS=
 }
 

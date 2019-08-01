@@ -10,6 +10,7 @@ import dirdb
 import tmp
 import installer
 import daemon
+import cli
 
 test_fails() {
     unit::assertEq 1 2 "this is error"
@@ -23,3 +24,4 @@ dirdb_test::all
 tmp_test::all
 installer_test::all
 daemon_test::all
+cli_test::all
