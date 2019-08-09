@@ -20,6 +20,7 @@ stack::print() {
         done
     fi
     echo -e "\n\e[91mExiting with error status $code"
+    wait
     exit "$code"
 }
 

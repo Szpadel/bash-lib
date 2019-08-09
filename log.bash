@@ -50,6 +50,7 @@ log::panic() {
 
 log::fatal() {
     log::error "$*"
+    wait
     exit 1
 }
 

@@ -31,6 +31,9 @@ traps::_handle_exit() {
     for cb in "${traps__exit_trap[@]}";do
         $cb
     done
+    if [ -z "$BASH_LIB_UNDER_TEST" ];then
+        exit
+    fi
 }
 
 traps::_handle_int() {
@@ -38,6 +41,9 @@ traps::_handle_int() {
     for cb in "${traps__int_trap[@]}";do
         $cb
     done
+    if [ -z "$BASH_LIB_UNDER_TEST" ];then
+        exit
+    fi
 }
 
 traps::_handle_err() {
@@ -52,12 +58,14 @@ traps::_handle_err() {
 }
 
 traps::_init() {
-    if [ "$traps__set_up" = "0" ] && [ -z "$BASH_LIB_UNDER_TEST" ];then
+    if [ "$BASHPID" != "$traps__set_up" ];then
         log::debug "Setting up traps for $BASHPID"
         traps__set_up=$BASHPID
         traps__exit_trap=()
         traps__int_trap=()
-        trap traps::_handle_exit EXIT
+    fi
+    if [ -z "$BASH_LIB_UNDER_TEST" ];then
+        trap traps::_handle_exit EXIT TERM
         trap traps::_handle_err ERR
         trap traps::_handle_int INT
     fi
