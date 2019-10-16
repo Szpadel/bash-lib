@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 set -e
 
+# We are on old bash on macos, we have startup brew directory set and we are not already in such env
+if [[ "${BASH_VERSINFO[0]}" -lt 4 ]] && [[ "$OSTYPE" == "darwin"* ]] && [ -n "$BASHLIB_STARTUP_BREW" ] && [ -z "$BASHLIB_BREW_DIR" ];then
+    # shellcheck source=/dev/null
+    source "$(dirname "${BASH_SOURCE[0]}")/brew_portable.bash"
+    brew::enter "$BASHLIB_STARTUP_BREW"
+    if ! [ -f "$BASHLIB_BREW_DIR/bin/bash" ];then
+        echo "Composing modern bash for itself" 1>&2
+        brew::brew install bash &> /dev/null
+    fi
+    # restart
+    exec bash "$0" "$@"
+fi
+
 [[ "${BASH_VERSINFO[0]}" -lt 4 ]] && echo "This application require bash >= 4, please upgrade it first" && exit 1
 
 declare -A bash_lib__imported
@@ -13,6 +26,8 @@ import::add_path() {
 }
 
 import() {
+    # because it might be unset in subshell
+    set -e
     for dir in "${bash_lib__paths[@]}";do
         local filename="$dir/$*.bash"
         if ! [ -f "$filename" ];then

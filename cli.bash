@@ -4,11 +4,15 @@ import log
 
 declare -Ag cli__options=()
 declare -Ag cli__descriptions=()
+cli__extra_info=""
+cli__app_description=""
 cli__program_name="$0"
 cli__order=()
 
 cli::reset() {
     cli__order=()
+    cli__extra_info=""
+    cli__app_description=""
     declare -Ag cli__options=()
     declare -Ag cli__descriptions=()
 }
@@ -17,6 +21,20 @@ cli::set_program_name() {
     local program_name="$1"
 
     cli__program_name="${program_name}"
+}
+
+# Additional info that will be displayed under option listing
+cli::set_extra_info() {
+    local info=$1
+
+    cli__extra_info="$info"
+}
+
+# Description visible under first line with arguments
+cli::set_app_description() {
+    local desc=$1
+    
+    cli__app_description="$desc"
 }
 
 cli::_option_encode() {
@@ -65,7 +83,15 @@ cli::print_help() {
             usage+="\n        "
         fi
     done
-    echo -e "${usage}\n\nOptions:\n${description}"
+    local app_description_formatted
+    if [ -n "$cli__app_description" ];then
+        app_description_formatted="\n\n    ${cli__app_description//\\n/\\n    }"
+    fi
+    local extra_info_formatted
+    if [ -n "$cli__extra_info" ];then
+        extra_info_formatted="\nAdditional informations:\n\n    ${cli__extra_info//\\n/\\n    }"
+    fi
+    echo -e "${usage}${app_description_formatted}\n\nOptions:\n${description}${extra_info_formatted}"
 }
 
 cli::handle() {

@@ -1,6 +1,9 @@
 #!/bin/usr/env bash
 
 import log
+import dialog
+
+exec__last_log=""
 
 # run command without displaying any output when it success
 exec::silent() {
@@ -9,10 +12,89 @@ exec::silent() {
         ret=$?
         return $ret
     else
-        local log=""
-        if ! log="$("$@" 2>&1)";then
+        if ! exec__last_log="$("$@" 2>&1)";then
             log::error "Command $* failed"
-            log::error "$log"
+            log::error "$exec__last_log"
+            return 1
+        fi
+
+        return 0
+    fi
+}
+
+exec::last_log() {
+    echo "$exec__last_log"
+}
+
+exec::_exec_spinner_progress() {
+    local line
+    local last_line
+    local lineno=0
+    local spinner_pos
+    local spinner=( "⢀⠀" "⡀⠀" "⠄⠀" "⢂⠀" "⡂⠀" "⠅⠀" "⢃⠀" "⡃⠀" "⠍⠀" "⢋⠀" "⡋⠀" "⠍⠁" "⢋⠁" "⡋⠁" "⠍⠉" "⠋⠉" "⠋⠉" "⠉⠙" "⠉⠙" "⠉⠩" "⠈⢙" "⠈⡙" "⢈⠩" "⡀⢙" "⠄⡙" "⢂⠩" "⡂⢘" "⠅⡘" "⢃⠨" "⡃⢐" "⠍⡐" "⢋⠠" "⡋⢀" "⠍⡁" "⢋⠁" "⡋⠁" "⠍⠉" "⠋⠉" "⠋⠉" "⠉⠙" "⠉⠙" "⠉⠩" "⠈⢙" "⠈⡙" "⠈⠩" "⠀⢙" "⠀⡙" "⠀⠩" "⠀⢘" "⠀⡘" "⠀⠨" "⠀⢐" "⠀⡐" "⠀⠠" "⠀⢀" "⠀⡀" )
+    local spinner_len="${#spinner[@]}"
+    local status
+    while true;do
+        read -r -t 0.1 line && status=$? || status=$? 
+        if [ "$status" != 0 ] && [ "$status" -le 128 ];then
+            break;
+        fi
+        if [ "$status" -gt 128 ];then
+            line="${last_line}"
+        else
+            echo "$line"
+        fi
+        lineno=$((lineno + 1))
+        spinner_pos=$((lineno % spinner_len))
+        log::status "${spinner[$spinner_pos]} $line"
+        last_line="$line"
+    done
+    log::status
+}
+
+exec::exec_preview() {
+    local ret
+    if [ "$DEBUG" = 1 ]; then
+        "$@"
+        ret=$?
+        return $ret
+    else
+        ret=0
+        exec__last_log="$("$@" 2>&1 | exec::_exec_spinner_progress; return "${PIPESTATUS[0]}")" || ret=$?
+        if [ "$ret" != "0" ];then
+            log::error "Command $* failed"
+            log::error "$exec__last_log"
+        fi
+        return "$ret"
+    fi
+}
+
+exec::dialog_silent() {
+    if [ "$DEBUG" = 1 ]; then
+        "$@"
+        ret=$?
+        return $ret
+    else
+        if ! exec__last_log="$("$@" 2>&1)";then
+            dialog::msg "Command $* failed:\n\n$(dialog::format_text "$exec__last_log")" 15 80
+            return 1
+        fi
+
+        return 0
+    fi
+}
+
+exec::dialog() {
+    local msg=$1
+    shift;
+    if [ "$DEBUG" = 1 ]; then
+        "$@"
+        ret=$?
+        return $ret
+    else
+        dialog::info "$msg"
+        if ! exec__last_log="$("$@" 2>&1)";then
+            dialog::msg "Command $* failed:\n\n$(dialog::format_text "$exec__last_log")" 15 80
             return 1
         fi
 
@@ -25,18 +107,17 @@ exec::retried_exec() {
     local sleep=$2
     shift;shift
     local try
-    local log
     for ((try=0; try<retries; try++)) {
-        if log="$("$@" 2>&1)" &>/dev/null;then
+        if exec__last_log="$("$@" 2>&1)" &>/dev/null;then
             return 0
         fi
         if [ "$DEBUG" = "1" ];then
-            echo "$log" >&2
+            echo "$exec__last_log" >&2
         fi
         sleep "$sleep"
     }
     log::error "Command $* failed $retries times"
-    log::error "$log"
+    log::error "$exec__last_log"
     return 1
 }
 

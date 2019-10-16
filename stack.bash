@@ -3,13 +3,13 @@
 stack::print() {
     local err=$?
     set +o xtrace
-    local code="${1:-1}"
+    local code="${1:$err}"
     local up=${2:-0}
     # Ignore errors detected in bashdb
     if [[ ${FUNCNAME[$up+1]} == _Dbg_* ]];then
         return
     fi
-    echo -e "\n\e[91mRuntime failure at ${BASH_SOURCE[$up+1]}:${BASH_LINENO[$up]} exit code $err\n"
+    echo -e "\n\e[91mRuntime failure at ${BASH_SOURCE[$up+1]}:${BASH_LINENO[$up]} exit code $code\n"
     stack::point_line "${BASH_SOURCE[$up+1]}" "${BASH_LINENO[$up]}"
     if [ ${#FUNCNAME[@]} -gt $((up+2)) ];then
         echo -e "\n\e[91mStack trace:"

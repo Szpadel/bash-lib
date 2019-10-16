@@ -33,7 +33,7 @@ log::debug() {
     local pid=$BASHPID
     if [ "$log__debug" = "1" ] || [ "$DEBUG" = "1" ];then
         if [ "$log__colors" = "1" ];then
-            echo -e "\e[90m$(printf "%-6s %-30s" "$pid" "${FUNCNAME[1]}"): $*\e[0m" >&2
+            echo -e "$(tput el)\e[90m$(printf "%-6s %-30s" "$pid" "${FUNCNAME[1]}"): $*\e[0m" >&2
         elif [ "$log__colors" = "-1" ];then
             log::detect_colors
             log::debug "$@"
@@ -56,7 +56,7 @@ log::fatal() {
 
 log::success() {
     if [ "$log__colors" = "1" ];then
-        echo -e "\e[32m$*\e[0m" >&2
+        echo -e "$(tput el)\e[32m$*\e[0m" >&2
     elif [ "$log__colors" = "-1" ];then
         log::detect_colors
         log::success "$@"
@@ -67,7 +67,7 @@ log::success() {
 
 log::info() {
     if [ "$log__colors" = "1" ];then
-        echo -e "\e[36m$*\e[0m" >&2
+        echo -e "$(tput el)\e[36m$*\e[0m" >&2
     elif [ "$log__colors" = "-1" ];then
         log::detect_colors
         log::info "$@"
@@ -78,7 +78,7 @@ log::info() {
 
 log::error() {
     if [ "$log__colors" = "1" ];then
-        echo -e "\e[31m$*\e[0m" >&2
+        echo -e "$(tput el)\e[31m$*\e[0m" >&2
     elif [ "$log__colors" = "-1" ];then
         log::detect_colors
         log::error "$@"
@@ -89,11 +89,62 @@ log::error() {
 
 log::warn() {
     if [ "$log__colors" = "1" ];then
-        echo -e "\e[33m$*\e[0m" >&2
+        echo -e "$(tput el)\e[33m$*\e[0m" >&2
     elif [ "$log__colors" = "-1" ];then
         log::detect_colors
         log::warn "$@"
     else
         echo -e "[WARN   ] $*" >&2
     fi
+}
+
+log::progress_bar() {
+    local done=$1
+    local total=${2:-100}
+
+    if [ "$total" = "0" ];then
+        log::debug "Total cannot be 0!"
+        total=1
+    fi
+    if [ "$done" -gt "$total" ];then
+        log::debug "Requested progress $done from $total"
+        done="$total"
+    fi
+    cols="$(tput cols)"
+    local filled="$((done * (cols - 6) / total))"
+    local percent="$((done * 100 / total))"
+    local a
+    local bar
+    bar="$(printf "%4s " "$percent%")"
+    bar+="$(echo -e "\e[42m")"
+    for ((a=0;a<filled;a++));do
+        bar+=" "
+    done
+    bar+="$(echo -e "\e[49m")"
+    
+    TRUSTED_CONTENT=1 log::status "$bar"
+}
+
+log::status() {
+    local line=$1
+
+    if [ "$DEBUG" = "1" ] || [ "$log__colors" != "1" ];then
+        return
+    fi
+
+    local cols
+    cols="$(tput cols)"
+    if [ "$TRUSTED_CONTENT" != "1" ];then
+        line=$(echo -n "$line" | tr -d '[:cntrl:]' | cut -c "-$cols")
+    fi
+    
+    local civis cuu el cr cnorm
+    civis="$(tput civis)"
+    cuu="$(tput cuu1)"
+    el="$(tput el)"
+    cr="$(tput cr)"
+    cnorm="$(tput cnorm)"
+
+    echo -n "${civis}"$'\n'"${cr}${el}${line}${cuu}${cr}${el}${cnorm}" >&2
+
 }
