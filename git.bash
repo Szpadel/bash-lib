@@ -22,7 +22,7 @@ git::is_dirty() {
 
     git::_git "$path" diff --quiet || return 0
     return 1
-}``
+}
 
 git:::tag() {
     local path=$1
