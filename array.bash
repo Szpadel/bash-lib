@@ -9,6 +9,15 @@ array::pop() {
     unset "arr[-1]"
 }
 
+# array::from_string some_array " "  "a b c"
+array::from_string() {
+    local output_var=$1
+    local split_by=${2:-$'\n'}
+
+    mapfile -t -d "$split_by" "$output_var"
+}
+
+# array::contains "find_me" "${array[@]}"
 array::contains() {
     local item="$1"
     shift

@@ -36,7 +36,7 @@ fetch::verify() {
     local sha=$1
     local file=$2
     local actual
-    actual=$(sha256sum "$file" | awk '{print $1}')
+    actual=$(sha256sum "$file" | gawk '{print $1}')
     if [ "$sha" != "$actual" ];then
         log::panic "Sha256 does not match. Expected ${sha} but got ${actual}"
     fi

@@ -44,6 +44,29 @@ dialog::menu() {
     return 1
 }
 
+dialog::select_from_array() {
+    local msg=$1
+    local -n _list=$2
+    
+    local order=()
+    local -A menu
+    local line
+    local n=0
+    local index
+    for line in "${_list[@]}";do
+        index="$(echo "$line" | grep -o '[0-9A-Za-z]'|head -n1)$n"
+        order+=( "$index" )
+        menu[$index]="$line"
+        n=$((n+1))
+    done
+    if dialog::menu "$msg" menu order 0 60;then
+        # shellcheck disable=SC2034
+        _output="${menu[$(dialog::result)]}"
+        return 0
+    fi
+    return 1
+}
+
 dialog::simple_list_select() {
     local msg=$1
     local list=$2
@@ -52,9 +75,11 @@ dialog::simple_list_select() {
     local -A menu
     local line
     local n=0
+    local index
     while IFS= read -r line;do
-        order+=( "$n" )
-        menu[$n]="$line"
+        index="$(echo "$line" | grep -o '[0-9A-Za-z]'|head -n1)$n"
+        order+=( "$index" )
+        menu[$index]="$line"
         n=$((n+1))
     done < <(echo "$list")
     if dialog::menu "$msg" menu order 0 60;then

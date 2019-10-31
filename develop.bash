@@ -23,8 +23,7 @@ develop::lint() {
 
 develop::is_in_dev_mode() {
     local dir=$1
-    if ! git::is_git_repo "$dir" || ! git::is_dirty "$dir";then
-        # we are not in git or git ins't dirty, then we run in production mode
+    if git::is_git_repo "$dir" && git::is_dirty "$dir";then
         return 0
     fi
     return 1

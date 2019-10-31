@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+import exec
 import dialog
 
 git::_git() {
@@ -9,6 +10,25 @@ git::_git() {
         cd "$path"
         git "$@"
     ) || return 1
+}
+
+git::clone() {
+    local path=$1
+    local repo=$2
+
+    exec::silent git::_git "$path" clone "$repo" .
+}
+
+git::push_all() {
+    local path=$1
+    
+    exec::silent git::_git "$path" push --all
+}
+
+git::push_tags() {
+    local path=$1
+    
+    exec::silent git::_git "$path" push --tags
 }
 
 git::is_git_repo() {
@@ -24,17 +44,30 @@ git::is_dirty() {
     return 1
 }
 
-git:::tag() {
+git::tag() {
     local path=$1
     local sha=$2
     local tag=$3
     local msg=$4
 
     if [ -n "$msg" ];then
-        git::_git "$path" -m "$msg" "$tag" "$sha"
+        git::_git "$path" tag -m "$msg" "$tag" "$sha"
     else
-        git::_git "$path" "$tag" "$sha"
+        git::_git "$path" tag "$tag" "$sha"
     fi
+}
+
+git::list_tags() {
+    local path=$1
+
+    git::_git "$path" tag -l
+}
+
+git::is_object_exists() {
+    local path=$1
+    local sha=$2
+
+    git::_git "$path" show -q "$sha" &> /dev/null || return 1
 }
 
 git::tag2commit_ref() {
@@ -77,7 +110,7 @@ git::clone_progress() {
     (
         dialog::progress_msg "Cloning $repo_display"
         # There are 4 passes with progress when clonning git repo, last awk command make every 100 worth 25%
-        git clone "$repo" "$path" --progress 2>&1 | stdbuf -i0 -o0 -e0 tr '\r' '\n' | stdbuf -i0 -o0 -e0 grep -o "[0-9]\{1,2\}\%" | stdbuf -i0 -o0 -e0 grep -o '[0-9]*' | stdbuf -i0 -o0 -e0 awk "BEGIN{p=0;x=0} {if(\$1 < p) {x+=25;print x} else {print x+(\$1/4)};p=\$1 }"
+        git clone "$repo" "$path" --progress 2>&1 | stdbuf -i0 -oL -eL tr '\r' '\n' | stdbuf -oL -eL grep -o "[0-9]\{1,3\}\%" | stdbuf -eL sed 's/%//g' | stdbuf -oL -eL gawk "BEGIN{p=0;x=0} {if(\$1 < p) {x+=25;print x} else {print x+(\$1/4)};p=\$1 }"
     ) | dialog::progress "git clone" 8 80
     if ! [ -d "$path/.git" ];then
         dialog::msg "Failed to clone $repo"
