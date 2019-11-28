@@ -24,6 +24,12 @@ brew::upgrade() {
     exec::exec_preview brew::brew upgrade "$pkg"
 }
 
+brew::reinstall() {
+    local pkg=$1
+    log::info "Reinstalling $pkg..."
+    exec::exec_preview brew::brew reinstall "$pkg"
+}
+
 brew::upgrade_all() {
     log::info "Upgrading packages..."
     exec::exec_preview brew::brew upgrade

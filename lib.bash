@@ -8,7 +8,7 @@ if [[ "${BASH_VERSINFO[0]}" -lt 4 ]] && [[ "$OSTYPE" == "darwin"* ]] && [ -n "$B
     brew::enter "$BASHLIB_STARTUP_BREW"
     if ! [ -f "$BASHLIB_BREW_DIR/bin/bash" ];then
         echo "Composing modern bash for itself" 1>&2
-        brew::brew install bash &> /dev/null
+        log="$(brew::brew install bash 2>&1)" || echo "$log" && exit 1
     fi
     # restart
     exec bash "$0" "$@"
