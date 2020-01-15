@@ -22,6 +22,17 @@ exec::silent() {
     fi
 }
 
+exec::escape() {
+    local p
+    for p in "$@";do
+        p="${p//\'/\"\'\"}"
+        p="${p//\\/\\\\}"
+        p="'${p}'"
+        p="${p//\'\|\'/|}"
+        echo -n "$p "
+    done
+}
+
 exec::last_log() {
     echo "$exec__last_log"
 }
@@ -196,8 +207,16 @@ exec_test::test_is_fn() {
     unit::assert_failed exec::is_fn some_var
 }
 
+exec_test::test_escape() {
+    local cmd_escaped
+    cmd_escaped="$(exec::escape bash -c "echo 'lol'; echo -e 'a\nb'" \| base64)"
+    echo "$cmd_escaped"
+    unit::assert_eq "$(sh -c "$cmd_escaped")" "$(bash -c "echo 'lol'; echo -e 'a\nb'" | base64)"
+}
+
 exec_test::all() {
     unit::test exec_test::test_output
     unit::test exec_test::test_is_cmd_available
     unit::test exec_test::test_is_fn
+    unit::test exec_test::test_escape
 }
